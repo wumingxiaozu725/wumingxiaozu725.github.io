@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>妈妈生日快乐祝福动画</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #fdf6f0; font-family: 'PingFang SC', sans-serif; touch-action: manipulation; }
+        .note {
+            position: absolute;
+            padding: 10px 16px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1;
+            user-select: none;
+            backdrop-filter: blur(2px);
+            left: 50%;
+            top: 50%;
+            transform-origin: center;
+        }
+        .note:hover { transform: scale(1.08) rotate(0deg) !important; box-shadow: 0 5px 15px rgba(0,0,0,0.15); z-index: 10; }
+        .final-note {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            padding: 22px 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            font-size: 22px;
+            font-weight: 600;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            background-color: #fda4af;
+            color: #7f1d1d;
+        }
+        .restart-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 200;
+            touch-action: manipulation;
+        }
+        .restart-btn.show { opacity: 1; }
+        .restart-btn:active { transform: translateX(-50%) scale(0.95); }
+    </style>
+</head>
+<body>
+    <div class="final-note" id="finalNote">妈妈生日快乐</div>
+    <button class="restart-btn" id="restartBtn">重新播放</button>
+
+    <script>
+        // 妈妈生日祝福文案库
+        const wishes = [
+            "妈妈生日快乐", "妈妈永远年轻漂亮", "妈妈身体健康", "妈妈天天开心",
+            "妈妈您辛苦了", "妈妈我爱您", "祝妈妈生日快乐", "妈妈岁岁平安",
+            "妈妈福如东海", "妈妈寿比南山", "妈妈笑口常开", "妈妈万事顺遂",
+            "妈妈幸福安康", "妈妈生日快乐呀", "妈妈永远快乐", "妈妈心想事成",
+            "妈妈平安喜乐", "妈妈生日快乐，永远爱您", "妈妈一生顺遂", "妈妈吉祥如意"
+        ];
+
+        // 温馨配色库
+        const colors = [
+            "bg-red-100 text-red-800", "bg-pink-100 text-pink-800", "bg-orange-100 text-orange-800",
+            "bg-yellow-100 text-yellow-800", "bg-purple-100 text-purple-800", "bg-pink-200 text-pink-900"
+        ];
+
+        const finalNote = document.getElementById('finalNote');
+        const restartBtn = document.getElementById('restartBtn');
+        let notes = [];
+        const noteCount = 60; // 满屏效果
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+        const centerX = screenW / 2;
+        const centerY = screenH / 2;
+
+        // 初始化便签（从中心向外扩散浮现）
+        function initNotes() {
+            notes.forEach(n => n.remove());
+            notes = [];
+            finalNote.style.opacity = 0;
+            finalNote.style.transform = 'translate(-50%, -50%) scale(0.7)';
+            restartBtn.classList.remove('show');
+
+            for (let i = 0; i < noteCount; i++) {
+                const note = document.createElement('div');
+                note.className = `note ${colors[Math.floor(Math.random() * colors.length)]}`;
+                note.textContent = wishes[Math.floor(Math.random() * wishes.length)];
+                
+                // 初始位置：屏幕中心，随机轻微偏移
+                const initOffsetX = Math.random() * 40 - 20;
+                const initOffsetY = Math.random() * 40 - 20;
+                // 最终扩散位置：以中心为原点，随机半径分布
+                const radius = Math.random() * Math.min(screenW, screenH) / 2.5;
+                const angle = Math.random() * Math.PI * 2;
+                const targetX = centerX + Math.cos(angle) * radius - note.offsetWidth / 2;
+                const targetY = centerY + Math.sin(angle) * radius - note.offsetHeight / 2;
+                const rotate = Math.random() * 12 - 6; // 轻微旋转
+                
+                // 初始状态（中心位置，透明）
+                note.style.left = `${centerX + initOffsetX}px`;
+                note.style.top = `${centerY + initOffsetY}px`;
+                note.style.transform = `translate(-50%, -50%) rotate(${rotate}deg) scale(0.8)`;
+                note.style.opacity = 0;
+                
+                document.body.appendChild(note);
+                // 存储目标位置供动画使用
+                notes.push({
+                    elem: note,
+                    targetX,
+                    targetY,
+                    rotate
+                });
+            }
+        }
+
+        // 动画主流程（中心浮现→扩散满屏→收敛回中心）
+        function startAnimation() {
+            initNotes();
+
+            // 第一步：从中心逐渐浮现并扩散到满屏
+            notes.forEach((item, idx) => {
+                const note = item.elem;
+                setTimeout(() => {
+                    note.style.opacity = 1;
+                    note.style.left = `${item.targetX}px`;
+                    note.style.top = `${item.targetY}px`;
+                    note.style.transform = `rotate(${item.rotate}deg) scale(1)`;
+                }, Math.random() * 1500 + 300); // 依次扩散，更自然
+            });
+
+            // 第二步：停留1.2秒后从四周收敛回中心
+            setTimeout(() => {
+                notes.forEach((item, idx) => {
+                    const note = item.elem;
+                    setTimeout(() => {
+                        note.style.left = `${centerX}px`;
+                        note.style.top = `${centerY}px`;
+                        note.style.transform = `translate(-50%, -50%) rotate(0deg) scale(0.6)`;
+                        note.style.opacity = 0;
+                    }, idx * 25); // 依次收敛，层次分明
+                });
+            }, 3000);
+
+            // 第三步：显示最终中心祝福“妈妈生日快乐”
+            setTimeout(() => {
+                finalNote.style.opacity = 1;
+                finalNote.style.transform = 'translate(-50%, -50%) scale(1)';
+                
+                restartBtn.classList.add('show');
+            }, 4800);
+        }
+
+        // 事件绑定
+        restartBtn.addEventListener('click', startAnimation);
+        restartBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startAnimation(); });
+        window.addEventListener('load', startAnimation);
+        window.addEventListener('resize', () => notes.length && startAnimation());
+    </script>
+</body>
+</html>
